@@ -51,6 +51,7 @@ dims_create_config(apr_pool_t *p, server_rec *s)
      */
     config->allow_private_addresses = 1;
     config->allowlist_signed = 0;
+    config->allow_short_hash = 1;
     config->origin_status_mode = DIMS_ORIGIN_STATUS_FORWARD;
     config->status_verbose = 1;
 
@@ -353,6 +354,15 @@ dims_config_set_allow_private_addresses(cmd_parms *cmd, void *dummy, int arg)
 }
 
 static const char *
+dims_config_set_allow_short_hash(cmd_parms *cmd, void *dummy, int arg)
+{
+    dims_config_rec *config = (dims_config_rec *) ap_get_module_config(
+            cmd->server->module_config, &dims_module);
+    config->allow_short_hash = arg;
+    return NULL;
+}
+
+static const char *
 dims_config_set_allowlist_signed(cmd_parms *cmd, void *dummy, const char *arg)
 {
     dims_config_rec *config = (dims_config_rec *) ap_get_module_config(
@@ -581,6 +591,12 @@ const command_rec dims_directives[] =
                   "10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, and IPv6 unique "
                   "local. The default is On. Loopback, link local, multicast, "
                   "and the reserved ranges are refused whatever this is set to."),
+    AP_INIT_FLAG("DimsAllowShortHash",
+                  dims_config_set_allow_short_hash, NULL, RSRC_CONF,
+                  "Whether /dims4/ accepts a short signature hash. On compares "
+                  "the first six characters. Off requires the full-length hash. "
+                  "The default is On. /dims5/ always compares the full length, "
+                  "so this directive does not affect it."),
     AP_INIT_TAKE1("DimsAllowlistSigned",
                   dims_config_set_allowlist_signed, NULL, RSRC_CONF,
                   "Whether the host allowlist applies to a signed request and "

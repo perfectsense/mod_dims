@@ -52,6 +52,14 @@ char *dims_signature_compute(apr_pool_t *pool, const char *key,
 int dims_signature_equal(const char *a, const char *b);
 
 /*
+ * Whether two hex digests are equal, comparing every byte whatever the answer.
+ *
+ * Like dims_signature_equal, but for a digest of any length, so /dims4/ can
+ * compare its MD5.
+ */
+int dims_digest_equal(const char *a, const char *b);
+
+/*
  * Whether a field the signature covers holds a control character.
  *
  * The message puts one field per line, so a field holding a line break could
