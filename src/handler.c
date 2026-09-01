@@ -147,7 +147,7 @@ dims_handle_request(dims_request_rec *d)
 
         if (!match) {
             ap_log_rerror(APLOG_MARK, APLOG_DEBUG, 0, d->r,
-                "Key mismatch, on request: %s", d->r->uri);
+                "Key mismatch: got %s [%s?url=%s]", hash, d->r->uri, d->image_url);
             return dims_cleanup(d, "Key mismatch", DIMS_BAD_URL);
         }
         ap_log_rerror(APLOG_MARK, APLOG_DEBUG, 0, d->r,
