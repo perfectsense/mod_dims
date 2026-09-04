@@ -204,6 +204,71 @@ test_no_query_string_answers(void)
     free(url);
 }
 
+/* The server that sets DimsAllowShortHash off. */
+static const char *
+short_hash_off_url(void)
+{
+    const char *from_env = getenv("DIMS_TEST_SHORT_HASH_OFF_URL");
+    return (from_env != NULL && from_env[0] != '\0') ? from_env
+                                                     : "http://dims:8008";
+}
+
+/*
+ * DimsAllowShortHash off requires the full digest, so a hash correct in its
+ * first six characters and wrong after them is refused.
+ */
+static void
+test_short_hash_off_requires_full_length(void)
+{
+    char *url = dims_fixture_url("grid.png");
+    char *signature = dims_signature_dims4(DIMS_TEST_EXPIRES, DIMS_TEST_SECRET,
+                                           SIGNED_COMMANDS, url, NULL, 0);
+    char full[2048];
+    char *path;
+    dims_response *response;
+
+    /* Keep the first six characters and replace the rest. */
+    memset(signature + 6, 'a', strlen(signature) - 6);
+
+    path = dims_sign_dims4_with(signature, DIMS_TEST_EXPIRES, COMMANDS, url, NULL, NULL);
+    snprintf(full, sizeof(full), "%s%s", short_hash_off_url(), path);
+    response = dims_get_absolute(full);
+
+    dims_test_logf("a digest correct in six characters under short hash off "
+                   "returns %ld", response->status);
+    CHECK(response->status != 200,
+          "DimsAllowShortHash off compares the full digest");
+
+    dims_response_free(response);
+    free(path);
+    free(signature);
+    free(url);
+}
+
+/* DimsAllowShortHash off still accepts a correct full-length signature. */
+static void
+test_short_hash_off_accepts_full_signature(void)
+{
+    char *url = dims_fixture_url("grid.png");
+    char *signature = dims_signature_dims4(DIMS_TEST_EXPIRES, DIMS_TEST_SECRET,
+                                           SIGNED_COMMANDS, url, NULL, 0);
+    char full[2048];
+    char *path;
+    dims_response *response;
+
+    path = dims_sign_dims4_with(signature, DIMS_TEST_EXPIRES, COMMANDS, url, NULL, NULL);
+    snprintf(full, sizeof(full), "%s%s", short_hash_off_url(), path);
+    response = dims_get_absolute(full);
+
+    CHECK_INT(response->status, 200,
+              "a correct full-length signature under short hash off");
+
+    dims_response_free(response);
+    free(path);
+    free(signature);
+    free(url);
+}
+
 const dims_test dims_tests_signing[] = {
     { "TestSignedUrlValidates", test_signed_url_validates, NULL },
     { "TestLegacySignatureMatchesModDims", test_legacy_signature_matches_mod_dims, NULL },
@@ -216,5 +281,9 @@ const dims_test dims_tests_signing[] = {
     { "TestUnsignedParametersAreRefused", test_unsigned_parameters_are_refused,
       "optimizeResize is never signed" },
     { "TestNoQueryStringAnswers", test_no_query_string_answers, NULL },
+    { "TestShortHashOffRequiresFullLength",
+      test_short_hash_off_requires_full_length, NULL },
+    { "TestShortHashOffAcceptsFullSignature",
+      test_short_hash_off_accepts_full_signature, NULL },
     DIMS_TEST_END
 };

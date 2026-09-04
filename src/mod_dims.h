@@ -174,6 +174,11 @@ struct dims_config_rec {
      * DimsAllowlistSigned: 0 logs what it would refuse, 1 refuses. */
     int allowlist_signed;
 
+    /* Whether /dims4/ accepts a short signature hash. Set from
+     * DimsAllowShortHash: 1 compares the first six characters, 0 requires the
+     * full-length hash. */
+    int allow_short_hash;
+
     /* How a failure at the origin reaches the caller. Set from
      * DimsOriginStatusMode. */
     int origin_status_mode;

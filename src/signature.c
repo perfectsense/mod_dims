@@ -236,6 +236,23 @@ dims_signature_equal(const char *a, const char *b)
 }
 
 int
+dims_digest_equal(const char *a, const char *b)
+{
+    size_t length;
+
+    if (a == NULL || b == NULL) {
+        return 0;
+    }
+
+    length = strlen(a);
+    if (strlen(b) != length) {
+        return 0;
+    }
+
+    return CRYPTO_memcmp(a, b, length) == 0;
+}
+
+int
 dims_signature_field_ok(const char *field)
 {
     const unsigned char *at;

@@ -56,6 +56,18 @@ than this is refused, which stops a caller minting URLs that never expire.
 
 `0`, the default, allows any expiry.
 
+## DimsAllowShortHash
+
+```apacheconf
+DimsAllowShortHash Off
+```
+
+Whether `/dims4/` accepts a short signature hash. `On`, the default, compares
+the first six characters of the hash. `Off` requires the full-length hash, so a
+hash that is correct in its first six characters and wrong after them is refused.
+
+`/dims5/` always compares the full length, so this directive does not affect it.
+
 ## DimsEncryptionAlgorithm
 
 ```apacheconf

@@ -13,6 +13,7 @@
 #include "url.h"
 #include "dims5.h"
 #include "encryption.h"
+#include "signature.h"
 #include "status.h"
 #include "pipeline.h"
 
@@ -140,10 +141,13 @@ dims_handle_request(dims_request_rec *d)
         // Hash.
         gen_hash = ap_md5(d->pool, (unsigned char *) signature_params);
 
-        if (strncasecmp(hash, gen_hash, 6) != 0) {
-            gen_hash[7] = '\0';
-            ap_log_rerror(APLOG_MARK, APLOG_DEBUG,0, d->r,
-                "Key Mismatch: wanted %6s got %6s [%s?url=%s]", gen_hash, hash, d->r->uri, d->image_url);
+        int match = d->config->allow_short_hash
+                ? strncasecmp(hash, gen_hash, 6) == 0
+                : dims_digest_equal(hash, gen_hash);
+
+        if (!match) {
+            ap_log_rerror(APLOG_MARK, APLOG_DEBUG, 0, d->r,
+                "Key mismatch: got %s [%s?url=%s]", hash, d->r->uri, d->image_url);
             return dims_cleanup(d, "Key mismatch", DIMS_BAD_URL);
         }
         ap_log_rerror(APLOG_MARK, APLOG_DEBUG, 0, d->r,
