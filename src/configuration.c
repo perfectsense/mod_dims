@@ -52,6 +52,7 @@ dims_create_config(apr_pool_t *p, server_rec *s)
     config->allow_private_addresses = 1;
     config->allowlist_signed = 0;
     config->allow_short_hash = 1;
+    config->dims5_expiry = 0;
     config->origin_status_mode = DIMS_ORIGIN_STATUS_FORWARD;
     config->status_verbose = 1;
 
@@ -363,6 +364,15 @@ dims_config_set_allow_short_hash(cmd_parms *cmd, void *dummy, int arg)
 }
 
 static const char *
+dims_config_set_dims5_expiry(cmd_parms *cmd, void *dummy, int arg)
+{
+    dims_config_rec *config = (dims_config_rec *) ap_get_module_config(
+            cmd->server->module_config, &dims_module);
+    config->dims5_expiry = arg;
+    return NULL;
+}
+
+static const char *
 dims_config_set_allowlist_signed(cmd_parms *cmd, void *dummy, const char *arg)
 {
     dims_config_rec *config = (dims_config_rec *) ap_get_module_config(
@@ -597,6 +607,15 @@ const command_rec dims_directives[] =
                   "the first six characters. Off requires the full-length hash. "
                   "The default is On. /dims5/ always compares the full length, "
                   "so this directive does not affect it."),
+    AP_INIT_FLAG("DimsDims5Expiry",
+                  dims_config_set_dims5_expiry, NULL, RSRC_CONF,
+                  "Whether /dims5/ honors the expiry settings the server already has. "
+                  "On refuses a request whose expires parameter, a time in seconds since "
+                  "the epoch, has passed or is not a time, applies "
+                  "DimsSecretMaxExpiryPeriod to it, and takes the cache headers of a "
+                  "response from DimsCacheExpire. Off ignores expires, sends "
+                  "max-age=0 and downstream-ttl=0, and ignores both settings, as /dims5/ "
+                  "always has. The default is Off."),
     AP_INIT_TAKE1("DimsAllowlistSigned",
                   dims_config_set_allowlist_signed, NULL, RSRC_CONF,
                   "Whether the host allowlist applies to a signed request and "

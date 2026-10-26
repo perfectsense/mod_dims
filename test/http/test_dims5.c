@@ -10,6 +10,8 @@
 
 #include "../lib/common.h"
 
+#include <time.h>
+
 static const char *
 dims5_url(void)
 {
@@ -192,6 +194,68 @@ test_dims5_signs_the_overlay(void)
     free(path);
     free(encoded);
     free(overlay);
+    free(url);
+}
+
+/* DimsDims5Expiry is on: a future expires is served, a past one refused, and
+ * DimsCacheExpire sets the cache headers. */
+static void
+test_dims5_expiry(void)
+{
+    char extra[64];
+    dims_response *response;
+
+    snprintf(extra, sizeof(extra), "expires=%ld", (long) time(NULL) + 3600);
+    response = dims5_request("resize/100x100", "grid.png", extra);
+    CHECK_INT(response->status, 200, "an expiry an hour ahead");
+    CHECK_STR(dims_header_value(response, "Cache-Control"), "max-age=7200, public",
+              "Cache-Control");
+    CHECK_STR(dims_header_value(response, "Edge-Control"), "downstream-ttl=7200",
+              "Edge-Control");
+    dims_response_free(response);
+
+    snprintf(extra, sizeof(extra), "expires=%ld", (long) time(NULL) - 60);
+    response = dims5_request("resize/100x100", "grid.png", extra);
+    CHECK(response->status >= 400,
+          "an expiry a minute ago must be refused, got %ld", response->status);
+    dims_response_free(response);
+}
+
+/* With DimsDims5Expiry off, expires, the period and DimsCacheExpire change
+ * nothing: the server sets them, and still answers max-age=0. */
+static void
+test_dims5_expiry_off_changes_nothing(void)
+{
+    char *url = dims_fixture_url("grid.png");
+    char extra[64];
+    const char *cases[2];
+    int i;
+
+    snprintf(extra, sizeof(extra), "expires=%ld", (long) time(NULL) - 60);
+    cases[0] = NULL;
+    cases[1] = extra;
+
+    for (i = 0; i < 2; i++) {
+        char *path = dims_sign_dims5("resize/100x100", url, cases[i]);
+        char full[2048];
+        dims_response *response;
+
+        snprintf(full, sizeof(full), "%s%s",
+                 getenv("DIMS_TEST_DIMS5_DEFAULTS_URL") != NULL
+                     ? getenv("DIMS_TEST_DIMS5_DEFAULTS_URL")
+                     : "http://dims:8009",
+                 path);
+        response = dims_get_absolute(full);
+
+        CHECK_INT(response->status, 200,
+                  "a request with no expires, then one that has passed");
+        CHECK_STR(dims_header_value(response, "Cache-Control"), "max-age=0, public",
+                  "Cache-Control");
+
+        dims_response_free(response);
+        free(path);
+    }
+
     free(url);
 }
 
@@ -381,6 +445,9 @@ const dims_test dims_tests_dims5[] = {
     { "TestDims5RefusesAControlCharacter",
       test_dims5_refuses_a_control_character, NULL },
     { "TestDims5Eurl", test_dims5_eurl, NULL },
+    { "TestDims5Expiry", test_dims5_expiry, NULL },
+    { "TestDims5ExpiryOffChangesNothing",
+      test_dims5_expiry_off_changes_nothing, NULL },
     { "TestDims5AcceptsASignatureComputedElsewhere",
       test_dims5_accepts_a_signature_computed_elsewhere, NULL },
     { "TestDims5ErrorImage", test_dims5_error_image, NULL },

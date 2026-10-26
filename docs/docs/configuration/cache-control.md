@@ -21,6 +21,11 @@ nothing. Default 86400.
 
 Sets `Cache-Control: max-age`, `Expires`, and `Edge-Control: downstream-ttl`.
 
+`/dims5/` has no client to carry a lifetime. It uses this only with
+[`DimsDims5Expiry`](/configuration/clients#dimsdims5expiry) on. With that off,
+the default, a successful `/dims5/` response sends `max-age=0` and
+`downstream-ttl=0`.
+
 ## DimsNoImageCacheExpire
 
 ```apacheconf
