@@ -58,6 +58,10 @@ On `/dims4/` the expiry is the path segment. `/dims5/` applies this only when
 [`DimsDims5Expiry`](#dimsdims5expiry) is on, and then the expiry is the signed
 `expires` parameter and a request without one is refused.
 
+A signer that rounds expiry up, as Brightspot's `signedUrlLifetime` does to the
+next 24 hours, needs this to be at least its lifetime plus that rounding, or its
+own fresh URLs are refused.
+
 `0`, the default, allows any expiry.
 
 ## DimsAllowShortHash
