@@ -136,17 +136,9 @@ end
 
 ## Expiry
 
-`expires` is an ordinary signed parameter, so a caller cannot move it without
-the key.
-
-It is read only when [`DimsDims5Expiry`](/configuration/clients#dimsdims5expiry) is on. Then a
-request is refused with `400` when the time has passed, and when the value is
-not a whole, non-negative number of seconds. A request with no `expires` does
-not expire, unless [`DimsSecretMaxExpiryPeriod`](/configuration/clients) is
-above `0`. Then every request must carry one, and it may be at most that many
-seconds from now.
-
-With `DimsDims5Expiry` off, the default, `expires` is ignored.
+`expires` is signed, so a caller cannot move it without the key. It is read only
+when [`DimsDims5Expiry`](/configuration/clients#dimsdims5expiry) is on, which
+refuses a past or malformed value with `400`.
 
 ## Control characters
 

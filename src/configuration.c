@@ -609,13 +609,9 @@ const command_rec dims_directives[] =
                   "so this directive does not affect it."),
     AP_INIT_FLAG("DimsDims5Expiry",
                   dims_config_set_dims5_expiry, NULL, RSRC_CONF,
-                  "Whether /dims5/ honors the expiry settings the server already has. "
-                  "On refuses a request whose expires parameter, a time in seconds since "
-                  "the epoch, has passed or is not a time, applies "
-                  "DimsSecretMaxExpiryPeriod to it, and takes the cache headers of a "
-                  "response from DimsCacheExpire. Off ignores expires, sends "
-                  "max-age=0 and downstream-ttl=0, and ignores both settings, as /dims5/ "
-                  "always has. The default is Off."),
+                  "On makes /dims5/ refuse a past or malformed expires, apply "
+                  "DimsSecretMaxExpiryPeriod, and take its cache headers from "
+                  "DimsCacheExpire. Off ignores all three. The default is Off."),
     AP_INIT_TAKE1("DimsAllowlistSigned",
                   dims_config_set_allowlist_signed, NULL, RSRC_CONF,
                   "Whether the host allowlist applies to a signed request and "

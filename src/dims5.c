@@ -128,8 +128,7 @@ dims5_verify(dims_request_rec *d)
         return DIMS_BAD_URL;
     }
 
-    /* expires is signed like any other parameter. Without DimsDims5Expiry it is
-     * ignored, as it always was. */
+    /* expires is signed; without DimsDims5Expiry it is ignored. */
     if (d->config->dims5_expiry &&
             !dims_expiry_ok((long long) apr_time_sec(apr_time_now()),
                             query_value(d, "expires"),
@@ -143,11 +142,9 @@ dims5_verify(dims_request_rec *d)
     d->image_url = image_url;
     d->unparsed_commands = commands;
     d->client_id = NULL;
-
     d->client_config = apr_pcalloc(d->pool, sizeof(dims_client_config_rec));
 
-    /* A zeroed client sends max-age=0, which no CDN keeps. DimsDims5Expiry uses
-     * DimsCacheExpire instead. */
+    /* A zeroed client sends max-age=0; DimsDims5Expiry uses DimsCacheExpire. */
     if (d->config->dims5_expiry) {
         d->client_config->cache_control_max_age = (int) d->config->default_expire;
         d->client_config->edge_control_downstream_ttl = (int) d->config->default_expire;
