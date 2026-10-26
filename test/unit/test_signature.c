@@ -179,19 +179,6 @@ test_field_ok(void)
     CHECK(!dims_signature_field_ok("a\x7f" "b"), "a delete");
 }
 
-static void
-test_expiry_ok(void)
-{
-    CHECK(dims_expiry_ok(1000, NULL, 0), "no value, no limit");
-    CHECK(!dims_expiry_ok(1000, NULL, 3600), "no value, with a limit");
-    CHECK(dims_expiry_ok(1000, "1000", 0), "right now");
-    CHECK(!dims_expiry_ok(1000, "999", 0), "a second ago");
-    CHECK(dims_expiry_ok(1000, "4600", 3600), "exactly at the limit");
-    CHECK(!dims_expiry_ok(1000, "4601", 3600), "a second past the limit");
-    CHECK(!dims_expiry_ok(1000, "soon", 0), "text");
-    CHECK(!dims_expiry_ok(1000, "99999999999999999999", 0), "too large to hold");
-}
-
 const dims_test dims_tests_unit_signature[] = {
     { "TestQueryEscape", test_query_escape, NULL },
     { "TestSignedQueryOrdersByName", test_signed_query_orders_by_name, NULL },
@@ -206,6 +193,5 @@ const dims_test dims_tests_unit_signature[] = {
     { "TestCompute", test_compute, NULL },
     { "TestEqual", test_equal, NULL },
     { "TestFieldOk", test_field_ok, NULL },
-    { "TestExpiryOk", test_expiry_ok, NULL },
     DIMS_TEST_END
 };

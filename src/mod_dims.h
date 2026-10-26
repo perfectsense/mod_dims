@@ -179,8 +179,6 @@ struct dims_config_rec {
      * full-length hash. */
     int allow_short_hash;
 
-    int dims5_expiry;
-
     /* How a failure at the origin reaches the caller. Set from
      * DimsOriginStatusMode. */
     int origin_status_mode;

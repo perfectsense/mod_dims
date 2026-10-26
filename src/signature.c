@@ -10,8 +10,6 @@
 #include <apr_tables.h>
 #include <openssl/crypto.h>
 #include <openssl/hmac.h>
-#include <errno.h>
-#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 
@@ -270,23 +268,4 @@ dims_signature_field_ok(const char *field)
     }
 
     return 1;
-}
-
-int
-dims_expiry_ok(long long now, const char *expires, long long max_period)
-{
-    char *end = NULL;
-    long long when;
-
-    if (expires == NULL) {
-        return max_period <= 0;
-    }
-
-    errno = 0;
-    when = strtoll(expires, &end, 10);
-    if (*expires == '\0' || *end != '\0' || errno == ERANGE || when < now) {
-        return 0;
-    }
-
-    return max_period <= 0 || when - now <= max_period;
 }

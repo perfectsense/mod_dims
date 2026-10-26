@@ -51,12 +51,8 @@ Repeat the directive for each client.
 DimsSecretMaxExpiryPeriod 604800
 ```
 
-How far ahead an expiry may be, in seconds. A request further ahead than this
-is refused, which stops a caller minting URLs that never expire.
-
-On `/dims4/` the expiry is the path segment. `/dims5/` applies this only when
-[`DimsDims5Expiry`](#dimsdims5expiry) is on, and then the expiry is the signed
-`expires` parameter and a request without one is refused.
+How far ahead a `/dims4/` expiry may be, in seconds. A request further ahead
+than this is refused, which stops a caller minting URLs that never expire.
 
 `0`, the default, allows any expiry.
 
@@ -84,22 +80,3 @@ integrity check and no initialisation vector.
 
 The key is derived from the client's secret: SHA-1 of the secret, the first 16
 hexadecimal characters, uppercased.
-
-## DimsDims5Expiry
-
-```apacheconf
-DimsDims5Expiry On
-```
-
-Whether `/dims5/` honors the expiry settings the server already has. `/dims4/`
-always does.
-
-`On` refuses a `/dims5/` request whose signed `expires` parameter, a time in
-seconds since the epoch, has passed or is not a time. It applies
-[`DimsSecretMaxExpiryPeriod`](#dimssecretmaxexpiryperiod) to `/dims5/`, so with
-that above `0` a request needs an `expires`, and it may be at most that many
-seconds from now. It also takes the cache headers of a `/dims5/` response from
-[`DimsCacheExpire`](/configuration/cache-control#dimscacheexpire).
-
-`Off`, the default, ignores `expires` and both settings, as `/dims5/` always
-has.

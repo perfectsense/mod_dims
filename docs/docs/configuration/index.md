@@ -70,7 +70,6 @@ Two more are worth enabling as your deployment allows.
 | `DimsImagemagickMapSize` | 1024 |
 | `DimsImagemagickMemorySize` | 512 |
 | `DimsImagemagickTimeout` | 3000 |
-| `DimsDims5Expiry` | `Off` |
 | `DimsIncludeDisposition` | false |
 | `DimsMaxSourceBytes` | 0 |
 | `DimsNoImageCacheExpire` | 60 |
