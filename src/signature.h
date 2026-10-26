@@ -67,4 +67,8 @@ int dims_digest_equal(const char *a, const char *b);
  */
 int dims_signature_field_ok(const char *field);
 
+/* Whether expires, seconds since the epoch, is acceptable at time now: a whole
+ * number, not past, and, when max_period is above 0, present and within it. */
+int dims_expiry_ok(long long now, const char *expires, long long max_period);
+
 #endif
