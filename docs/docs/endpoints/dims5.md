@@ -24,6 +24,7 @@ the endpoint.
 | `sig` | no | the signature itself |
 | `download` | no | `1` sends `Content-Disposition: attachment` |
 | `_keys` | no | accepted and ignored |
+| `expires` | **yes** | when the URL stops working, in seconds since the epoch |
 | anything else | **yes** | passed to the command that reads it |
 
 `overlay` is signed, so a watermark URL cannot be replayed against a different
@@ -132,6 +133,12 @@ def sign(key, commands, image_url, params)
   OpenSSL::HMAC.hexdigest('SHA256', key, message)
 end
 ```
+
+## Expiry
+
+`expires` is signed, so a caller cannot move it without the key. It is read only
+when [`DimsDims5Expiry`](/configuration/clients#dimsdims5expiry) is on, which
+refuses a past or malformed value with `400`.
 
 ## Control characters
 

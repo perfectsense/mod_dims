@@ -128,10 +128,27 @@ dims5_verify(dims_request_rec *d)
         return DIMS_BAD_URL;
     }
 
+    /* expires is signed; without DimsDims5Expiry it is ignored. */
+    if (d->config->dims5_expiry &&
+            !dims_expiry_ok((long long) apr_time_sec(apr_time_now()),
+                            query_value(d, "expires"),
+                            (long long) d->config->max_expiry_period)) {
+        ap_log_rerror(APLOG_MARK, APLOG_DEBUG, 0, d->r,
+                "The expires is missing, not a time, past, or too far ahead, "
+                "on request: %s", d->r->uri);
+        return DIMS_BAD_URL;
+    }
+
     d->image_url = image_url;
     d->unparsed_commands = commands;
     d->client_id = NULL;
     d->client_config = apr_pcalloc(d->pool, sizeof(dims_client_config_rec));
+
+    /* A zeroed client sends max-age=0; DimsDims5Expiry uses DimsCacheExpire. */
+    if (d->config->dims5_expiry) {
+        d->client_config->cache_control_max_age = (int) d->config->default_expire;
+        d->client_config->edge_control_downstream_ttl = (int) d->config->default_expire;
+    }
     d->no_image_url = d->config->no_image_url;
 
     if (query_value(d, "download") != NULL) {
