@@ -31,6 +31,20 @@ How long an error image may be cached, in seconds. Default 60.
 
 It is short on purpose. A long one caches a failure across a whole CDN.
 
+Every failure uses it, including a source that downloads with a 200 and then does not decode. The response keeps the status the origin sent, so a CDN that caches by status still sees the `max-age` and drops the error image after this many seconds.
+
+An error image carries no `ETag` and no `Last-Modified`. Those describe the source, and a cache that kept them would revalidate the error image against the source, get a 304 once the source works again, and keep the error image for the success lifetime.
+
+## DimsMaxSourcePixelsCacheExpire
+
+```apacheconf
+DimsMaxSourcePixelsCacheExpire 3600
+```
+
+How long the error image sent for a source over `DimsMaxSourcePixels` may be cached, in seconds. Default 3600.
+
+A refused source fails the same way on every request, so its error image may keep for longer than the one a transient failure sends. A CDN then asks again once an hour instead of once a minute.
+
 ## DimsErrorBackground
 
 ```apacheconf

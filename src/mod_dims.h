@@ -59,7 +59,10 @@ typedef enum {
     DIMS_FILE_NOT_FOUND,
 
     /* The network guard refused the target. */
-    DIMS_NETWORK_REFUSED
+    DIMS_NETWORK_REFUSED,
+
+    /* The source holds more pixels than DimsMaxSourcePixels allows. */
+    DIMS_SOURCE_TOO_LARGE
 } dims_status_t;
 
 /* How a multi-frame source is handled. Set from DimsAnimatedImages. */
@@ -165,6 +168,14 @@ struct dims_config_rec {
     /* Largest source image to accept, in bytes. Zero means no limit. */
     size_t max_source_bytes;
 
+    /* Largest source image to decode, in pixels. Zero means no limit. Set
+     * from DimsMaxSourcePixels. */
+    apr_uint64_t max_source_pixels;
+
+    /* How long the error image sent for a refused oversized source may be
+     * cached, in seconds. Set from DimsMaxSourcePixelsCacheExpire. */
+    long oversize_expire;
+
     /* Whether a fetch may reach a private address. Set from
      * DimsAllowPrivateAddresses. Loopback and link local are refused whatever
      * this holds. */
@@ -238,6 +249,9 @@ struct dims_request_rec {
     /* The URL to the image being manipulated. */
     char *image_url;
     int use_no_image;
+
+    /* Set when DimsMaxSourcePixels refused the source. */
+    int source_too_large;
 
     /* The URL to the NOIMAGE image in case of failures. */
     char *no_image_url;

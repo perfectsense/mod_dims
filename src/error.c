@@ -20,6 +20,10 @@ dims_http_status(int status)
         case DIMS_BAD_ARGUMENTS:
             return HTTP_BAD_REQUEST;
 
+        /* The source is one the service will not decode. */
+        case DIMS_SOURCE_TOO_LARGE:
+            return HTTP_BAD_REQUEST;
+
         /* The guard refused the target. go-dims answers 400 for the same
          * refusal, so the two projects agree on what a caller sees. */
         case DIMS_NETWORK_REFUSED:
@@ -51,6 +55,7 @@ dims_status_name(int status)
         case DIMS_HOSTNAME_NOT_IN_WHITELIST: return "hostname not in whitelist";
         case DIMS_FILE_NOT_FOUND:           return "file not found";
         case DIMS_NETWORK_REFUSED:          return "network guard refused the target";
+        case DIMS_SOURCE_TOO_LARGE:         return "source too large";
         default:                            return "unknown";
     }
 }
