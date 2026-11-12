@@ -32,6 +32,50 @@ test_undecodable_source_is_cached_as_a_failure(void)
     dims_response_free(response);
 }
 
+/*
+ * The error image carries no validators. The source downloaded, so its ETag and
+ * Last-Modified exist, and a cache that kept them would revalidate the error
+ * image against the source and extend it on a 304.
+ */
+static void
+test_undecodable_source_sends_no_validators(void)
+{
+    dims_response *response = dims_request_ops("resize/100x100", "corrupt.jpg");
+
+    CHECK(response->transport_error == NULL, "the worker must answer: %s",
+          response->transport_error ? response->transport_error : "");
+    CHECK(dims_header_value(response, "ETag") == NULL,
+          "ETag must not be sent on the error image, got \"%s\"",
+          dims_header_value(response, "ETag"));
+    CHECK(dims_header_value(response, "Last-Modified") == NULL,
+          "Last-Modified must not be sent on the error image, got \"%s\"",
+          dims_header_value(response, "Last-Modified"));
+
+    dims_response_free(response);
+}
+
+/* A conditional request for a source that does not decode is answered in full. */
+static void
+test_undecodable_source_is_not_revalidated(void)
+{
+    char *url = dims_fixture_url("corrupt.jpg");
+    char *path = dims_sign_dims4("resize/100x100", url, NULL, NULL);
+    const char *const headers[] = { "If-None-Match: \"anything\"" };
+    dims_response *response = dims_get_with_headers(path, headers, 1);
+
+    CHECK(response->transport_error == NULL, "the worker must answer: %s",
+          response->transport_error ? response->transport_error : "");
+    CHECK(response->status != 304, "a failure must not answer 304, got %ld",
+          response->status);
+    CHECK(response->body_len > 0, "the error image must be sent");
+    CHECK_STR(dims_header_value(response, "Cache-Control"), "max-age=60, public",
+              "Cache-Control");
+
+    dims_response_free(response);
+    free(path);
+    free(url);
+}
+
 /* A crop the error image cannot satisfy still answers as a failure. */
 static void
 test_undecodable_source_with_a_crop_is_cached_as_a_failure(void)
@@ -63,6 +107,10 @@ test_decodable_source_keeps_its_own_headers(void)
 const dims_test dims_tests_fetch_failure[] = {
     { "TestUndecodableSourceIsCachedAsAFailure",
       test_undecodable_source_is_cached_as_a_failure, NULL },
+    { "TestUndecodableSourceSendsNoValidators",
+      test_undecodable_source_sends_no_validators, NULL },
+    { "TestUndecodableSourceIsNotRevalidated",
+      test_undecodable_source_is_not_revalidated, NULL },
     { "TestUndecodableSourceWithACropIsCachedAsAFailure",
       test_undecodable_source_with_a_crop_is_cached_as_a_failure, NULL },
     { "TestDecodableSourceKeepsItsOwnHeaders",

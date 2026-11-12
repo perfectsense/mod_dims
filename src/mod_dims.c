@@ -562,7 +562,16 @@ dims_send_image(dims_request_rec *d)
         apr_table_set(d->r->subprocess_env, buf, d->client_id);
     }
 
-    dims_set_validators(d);
+    /*
+     * The validators describe the source, which may well have downloaded, and
+     * an error image is not a rendition of it. A cache that held an ETag for
+     * the error image would revalidate it against the source, get a 304 once
+     * the source works again, and keep the error image for the full success
+     * lifetime. So a failure sends none.
+     */
+    if (d->status == DIMS_SUCCESS) {
+        dims_set_validators(d);
+    }
 
     /* The length written, not a second measurement of the wand.
      * MagickGetImagesBlob serializes every image; MagickGetImageLength reports
