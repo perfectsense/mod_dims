@@ -299,6 +299,37 @@ dims_fetch_remote_image(dims_request_rec *d, const char *url)
             actual_image_data[actual_image_len] = '\0';
         }
 
+        /*
+         * A source over DimsMaxSourcePixels is refused before it is decoded.
+         * The probe reads the header only, on a wand of its own, so the size
+         * hint set on the request wand for the decode does not scale what it
+         * reports. The error image is never measured: it must be served
+         * whatever the limit holds.
+         */
+        if (url != NULL && d->config->max_source_pixels > 0) {
+            MagickWand *probe = NewMagickWand();
+            apr_uint64_t pixels = 0;
+
+            if (MagickPingImageBlob(probe, actual_image_data, actual_image_len)
+                    == MagickTrue) {
+                pixels = (apr_uint64_t) MagickGetImageWidth(probe)
+                        * (apr_uint64_t) MagickGetImageHeight(probe);
+            }
+            DestroyMagickWand(probe);
+
+            if (pixels > d->config->max_source_pixels) {
+                ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, d->r,
+                        "Source image has %" APR_UINT64_T_FMT " pixels, more "
+                        "than DimsMaxSourcePixels (%" APR_UINT64_T_FMT "), "
+                        "on request: %s", pixels, d->config->max_source_pixels,
+                        d->r->uri);
+                free(image_data.data);
+                d->status = DIMS_SOURCE_TOO_LARGE;
+                d->source_too_large = 1;
+                return 1;
+            }
+        }
+
         start_time = apr_time_now();
         if(MagickReadImageBlob(d->wand, actual_image_data, actual_image_len)
                 == MagickFalse) {
@@ -423,7 +454,11 @@ dims_set_cache_headers(dims_request_rec *d)
         expire_time = d->config->default_expire;
         cache_control = apr_psprintf(d->pool, "max-age=%d, public", expire_time);
     } else {
-        expire_time = d->config->no_image_expire;
+        /* A refused oversized source fails the same way on every request, so
+         * its error image keeps for longer than the one a transient failure
+         * sends. */
+        expire_time = d->source_too_large ? d->config->oversize_expire
+                                          : d->config->no_image_expire;
         cache_control = apr_psprintf(d->pool, "max-age=%d, public", expire_time);
     }
 

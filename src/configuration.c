@@ -27,6 +27,8 @@ dims_create_config(apr_pool_t *p, server_rec *s)
 
     config->no_image_url = NULL;
     config->no_image_expire = 60;
+    config->max_source_pixels = 0;
+    config->oversize_expire = 3600;
     config->default_image_prefix = NULL;
 
     config->default_expire = 86400;
@@ -345,6 +347,38 @@ dims_config_set_max_source_bytes(cmd_parms *cmd, void *dummy, const char *arg)
 }
 
 static const char *
+dims_config_set_max_source_pixels(cmd_parms *cmd, void *dummy, const char *arg)
+{
+    dims_config_rec *config = (dims_config_rec *) ap_get_module_config(
+            cmd->server->module_config, &dims_module);
+    char *end = NULL;
+    apr_int64_t value = apr_strtoi64(arg, &end, 10);
+
+    if (end == arg || *end != '\0' || value < 0) {
+        return "DimsMaxSourcePixels must be a whole number of pixels, or 0 for no limit";
+    }
+
+    config->max_source_pixels = (apr_uint64_t) value;
+    return NULL;
+}
+
+static const char *
+dims_config_set_oversize_expire(cmd_parms *cmd, void *dummy, const char *arg)
+{
+    dims_config_rec *config = (dims_config_rec *) ap_get_module_config(
+            cmd->server->module_config, &dims_module);
+    char *end = NULL;
+    apr_int64_t value = apr_strtoi64(arg, &end, 10);
+
+    if (end == arg || *end != '\0' || value < 0) {
+        return "DimsMaxSourcePixelsCacheExpire must be a whole number of seconds";
+    }
+
+    config->oversize_expire = (long) value;
+    return NULL;
+}
+
+static const char *
 dims_config_set_allow_private_addresses(cmd_parms *cmd, void *dummy, int arg)
 {
     dims_config_rec *config = (dims_config_rec *) ap_get_module_config(
@@ -585,6 +619,16 @@ const command_rec dims_directives[] =
                   "Largest source image to accept, in bytes. A source larger than "
                   "this is refused before it is decoded. The default is 0, which "
                   "means no limit."),
+    AP_INIT_TAKE1("DimsMaxSourcePixels",
+                  dims_config_set_max_source_pixels, NULL, RSRC_CONF,
+                  "Largest source image to decode, in pixels. A source with "
+                  "more pixels is refused after its header is read and before "
+                  "it is decoded. The default is 0, which means no limit."),
+    AP_INIT_TAKE1("DimsMaxSourcePixelsCacheExpire",
+                  dims_config_set_oversize_expire, NULL, RSRC_CONF,
+                  "How long the error image sent for a source over "
+                  "DimsMaxSourcePixels may be cached, in seconds. The default "
+                  "is 3600."),
     AP_INIT_FLAG("DimsAllowPrivateAddresses",
                   dims_config_set_allow_private_addresses, NULL, RSRC_CONF,
                   "Whether a fetch may reach a private address, meaning "

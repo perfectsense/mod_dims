@@ -274,10 +274,21 @@ verified:
         /* Fetch the image into a buffer. */
         if (fetch_url && dims_fetch_remote_image(d, fetch_url) != 0) {
             /*
-             * The source failed. Send the error image, and report the status
-             * the failure produced. dims_fetch_remote_image records one only
-             * for a 404, so anything else needs DIMS_FAILURE rather than
-             * DIMS_IGNORE, which would keep the success it was marked with.
+             * The source failed and the error image stands in for it. A source
+             * that downloaded with a 200 but did not decode leaves the success
+             * the request started with, and the error image would then carry
+             * the cache headers of a real image. Record the failure before the
+             * error image is processed, so the response is cached as a failure.
+             */
+            if (d->status == DIMS_SUCCESS && d->fetch_http_status == HTTP_OK) {
+                d->status = DIMS_FAILURE;
+            }
+
+            /*
+             * Send the error image, and report the status the failure
+             * produced. dims_fetch_remote_image records one only for a 404,
+             * so anything else needs DIMS_FAILURE rather than DIMS_IGNORE,
+             * which would keep the success it was marked with.
              */
             if (dims_fetch_remote_image(d, NULL) != 0) {
                 return dims_cleanup(d, NULL,
@@ -357,6 +368,7 @@ dims_handler(request_rec *r)
     d->client_config = NULL;
     d->no_image_url = d->config->no_image_url;
     d->use_no_image = 0;
+    d->source_too_large = 0;
     d->image_url = NULL;
     d->filename = NULL;
     d->cache_control = NULL;
