@@ -16,6 +16,7 @@ add_executable(dims_test
     http/test_dims5.c
     http/test_errors.c
     http/test_origin_status.c
+    http/test_encoded_fetch_off.c
     http/test_output.c
     http/test_resize.c
     http/test_rotate.c
