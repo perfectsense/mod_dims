@@ -243,7 +243,7 @@ test_dims5_expiry_off_changes_nothing(void)
         snprintf(full, sizeof(full), "%s%s",
                  getenv("DIMS_TEST_DIMS5_DEFAULTS_URL") != NULL
                      ? getenv("DIMS_TEST_DIMS5_DEFAULTS_URL")
-                     : "http://dims:8009",
+                     : "http://dims:8011",
                  path);
         response = dims_get_absolute(full);
 
