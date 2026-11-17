@@ -210,7 +210,7 @@ short_hash_off_url(void)
 {
     const char *from_env = getenv("DIMS_TEST_SHORT_HASH_OFF_URL");
     return (from_env != NULL && from_env[0] != '\0') ? from_env
-                                                     : "http://dims:8008";
+                                                     : "http://dims:8010";
 }
 
 /*
