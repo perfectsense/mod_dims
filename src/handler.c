@@ -14,6 +14,7 @@
 #include "dims5.h"
 #include "encryption.h"
 #include "signature.h"
+#include "metrics.h"
 #include "status.h"
 #include "pipeline.h"
 
@@ -48,6 +49,7 @@ dims_handle_request(dims_request_rec *d)
 
     if(!(d->client_config =
             apr_hash_get(d->config->clients, d->client_id, APR_HASH_KEY_STRING))) {
+        dims_metrics_signature(d->endpoint, DIMS_SIG_BAD_CLIENT);
         return dims_cleanup(d, "Application ID is not valid", DIMS_BAD_CLIENT);
     }
 
@@ -68,11 +70,13 @@ dims_handle_request(dims_request_rec *d)
         now = apr_time_sec(now_time);
         if ( expires - now < 0 ) {
             ap_log_rerror( APLOG_MARK, APLOG_DEBUG,0, d->r, "Image expired: %s now=%ld", d->r->uri,now);
+            dims_metrics_signature(d->endpoint, DIMS_SIG_EXPIRED);
             return dims_cleanup( d, "Image Key has expired", DIMS_BAD_URL);
         }
         if ( expires - now > d->config->max_expiry_period && d->config->max_expiry_period >0 ) {
             ap_log_rerror( APLOG_MARK, APLOG_DEBUG,0, d->r,
                 "Image expiry too far in the future:%s %s now=%ld",expires_str, d->r->uri,now);
+            dims_metrics_signature(d->endpoint, DIMS_SIG_TOO_FAR_FUTURE);
             return dims_cleanup(d, "Image key too far in the future", DIMS_BAD_URL);
         }
 
@@ -117,6 +121,7 @@ dims_handle_request(dims_request_rec *d)
         if (d->client_config->secret_key == NULL) {
             ap_log_rerror(APLOG_MARK, APLOG_DEBUG, 0, d->r,
                 "Developer key not set for client '%s'", d->client_config->id);
+            dims_metrics_signature(d->endpoint, DIMS_SIG_MISSING_KEY);
             return dims_cleanup(d, "Missing Developer Key", DIMS_BAD_CLIENT);
         }
 
@@ -148,8 +153,10 @@ dims_handle_request(dims_request_rec *d)
         if (!match) {
             ap_log_rerror(APLOG_MARK, APLOG_DEBUG, 0, d->r,
                 "Key mismatch: got %s [%s?url=%s]", hash, d->r->uri, d->image_url);
+            dims_metrics_signature(d->endpoint, DIMS_SIG_MISMATCH);
             return dims_cleanup(d, "Key mismatch", DIMS_BAD_URL);
         }
+        dims_metrics_signature(d->endpoint, DIMS_SIG_OK);
         ap_log_rerror(APLOG_MARK, APLOG_DEBUG, 0, d->r,
             "secret key (%s) to validated (%s:%s)", hash,  d->unparsed_commands,d->image_url);
     }
@@ -260,6 +267,11 @@ verified:
             found = 1;
         } else {
             found = dims_host_allowed(d->config->whitelist, hostname);
+
+            /* This check refuses the request, so it counts as enforce. The
+             * guard runs its own check at fetch time under
+             * DimsAllowlistSigned. */
+            dims_metrics_allowlist(DIMS_ALLOWLIST_ENFORCE, found);
         }
 
         if(found) {
@@ -283,6 +295,10 @@ verified:
                 return dims_cleanup(d, NULL,
                         d->status != DIMS_SUCCESS ? DIMS_IGNORE : DIMS_FAILURE);
             }
+
+            /* The commands now run against the error image, which a crop must
+             * not cut into. dims_run_commands reads this to rewrite one. */
+            d->use_no_image = 1;
         }
 
         return dims_process_image(d);
@@ -357,6 +373,11 @@ dims_handler(request_rec *r)
     d->client_config = NULL;
     d->no_image_url = d->config->no_image_url;
     d->use_no_image = 0;
+    d->endpoint = -1;
+    d->source_format_index = -1;
+    d->output_format_index = -1;
+    d->output_bytes = 0;
+    d->source_frames = 0;
     d->image_url = NULL;
     d->filename = NULL;
     d->cache_control = NULL;
@@ -390,14 +411,20 @@ dims_handler(request_rec *r)
         /* Handle local filesystem images w/DIMS parameters. */
         d->filename = r->canonical_filename;
         d->unparsed_commands = r->path_info;
+        d->endpoint = DIMS_ENDPOINT_LOCAL;
+        dims_metrics_request_begin(d);
 
         return dims_handle_request(d);
     } else if ((strcmp(r->handler, "dims3") == 0) ||
-            (r->uri && strncmp(r->uri, "/dims3/", 7) == 0) ||
             (strcmp(r->handler, "dims4") == 0 )) {
         /* Handle new-style DIMS parameters. */
         char *p, *fixed_url = NULL, *commands = NULL, *eurl = NULL;
-        if (( strcmp( r->handler,"dims4") == 0)) {
+        int is_dims4 = strcmp(r->handler, "dims4") == 0;
+
+        d->endpoint = is_dims4 ? DIMS_ENDPOINT_DIMS4 : DIMS_ENDPOINT_DIMS3;
+        dims_metrics_request_begin(d);
+
+        if (is_dims4) {
                d->use_secret_key = 1;
         }
 
@@ -544,8 +571,12 @@ dims_handler(request_rec *r)
         return dims_handle_request(d);
     } else if(strcmp(r->handler, "dims5") == 0) {
         d->scheme = DIMS_SCHEME_DIMS5;
+        d->endpoint = DIMS_ENDPOINT_DIMS5;
+        dims_metrics_request_begin(d);
 
         return dims_handle_request(d);
+    } else if(strcmp(r->handler, "dims-metrics") == 0) {
+        return dims_metrics_handler(r);
     } else if(strcmp(r->handler, "dims-status") == 0) {
         return dims_status_handler(r);
     } else if(strcmp(r->handler, "dims-sizer") == 0) {
