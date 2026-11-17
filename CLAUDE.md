@@ -6,6 +6,9 @@ An Apache httpd module that resizes, crops, and reformats images on request.
 
 Write one short line in the imperative mood. State the change and nothing else.
 
+- Start the line with a Conventional Commits type: `feat:`, `fix:`, `docs:`, `test:`,
+  `ci:`, or `chore:`. Release Please reads the type to set the next version. A
+  pull request title follows the same rule, because a squash merge uses it.
 - No history. Do not describe the previous behavior.
 - No attribution. No sign-off, co-author, or tool reference.
 - No commentary. No reasoning and no apology.
@@ -13,11 +16,11 @@ Write one short line in the imperative mood. State the change and nothing else.
   line.
 
 ```
-Close every MagickWand before returning
+fix: close every MagickWand before returning
 ```
 
 ```
-Validate query parameters
+fix: validate query parameters
 
 - Compare the full parameter name, not four bytes.
 - Check the remaining length before indexing into a token.
