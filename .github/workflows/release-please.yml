@@ -1,0 +1,23 @@
+name: Release Please
+
+# Keeps a release pull request open on main. Merging it creates the tag and the
+# GitHub release. A release publishes no image: Brightspot Cloud builds the
+# module from the tag.
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  release-please:
+    name: Release Please
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: googleapis/release-please-action@v5
