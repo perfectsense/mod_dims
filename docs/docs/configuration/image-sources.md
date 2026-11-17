@@ -80,8 +80,14 @@ rather than an origin.
 DimsDisableEncodedFetch 1
 ```
 
-Set to `1` to fetch the source URL exactly as given, rather than percent
+Set to `1` to fetch the source URL as the request gave it, rather than percent
 encoding it first. `0` is the default.
+
+The `url` parameter is decoded before the fetch either way. With `1`, a decoded
+percent escape is sent as it is, so a client that double encodes its source
+(`%2520` for a space) reaches the origin with `%20`. The bytes a URL cannot
+carry, such as a space or a control character, are still escaped, so a client
+that encodes its source once (`%20`) reaches the origin too.
 
 ## DimsOverlayCacheMaxEntries
 

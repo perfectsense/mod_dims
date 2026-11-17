@@ -55,6 +55,41 @@ static char *url_encode(const char *str) {
 }
 
 /*
+ * Percent-encodes the bytes a URL cannot carry and leaves every other byte,
+ * including an existing percent escape, as it is. The caller frees the result.
+ *
+ * With encoded fetch off the source URL is sent as decoded. A decoded space
+ * or control byte makes a URL libcurl refuses, while a decoded %25 is a
+ * percent sign the origin needs, so only the first kind is touched.
+ */
+static char *url_escape_invalid(const char *str) {
+    const char *pstr = str;
+    char *buf;
+    char *pbuf;
+
+    buf = malloc(strlen(str) * 3 + 1);
+    if (buf == NULL) {
+        return NULL;
+    }
+
+    pbuf = buf;
+    while (*pstr) {
+        unsigned char c = (unsigned char) *pstr;
+
+        if (c <= 0x20 || c >= 0x7f || c == '"' || c == '<' || c == '>' ||
+                c == '\\' || c == '^' || c == '`' || c == '{' || c == '|' ||
+                c == '}')
+            *pbuf++ = '%', *pbuf++ = to_hex((char) (c >> 4)),
+            *pbuf++ = to_hex((char) (c & 15));
+        else
+            *pbuf++ = (char) c;
+        pstr++;
+    }
+    *pbuf = '\0';
+    return buf;
+}
+
+/*
  * Appends a chunk of the download to the buffer.
  *
  * Returning anything other than the chunk size aborts the transfer, which is
@@ -244,9 +279,12 @@ dims_get_image_data(dims_request_rec *d, char *fetch_url, dims_image_data_t *dat
     apr_pool_userdata_get((void *) &s, DIMS_CURL_SHARED_KEY,
             d->r->server->process->pool);
 
-    /* Encode the fetch URL before downloading */
-    if (!d->config->disable_encoded_fetch) {
-        char *encoded = url_encode(fetch_url);
+    /* Encode the fetch URL before downloading. With encoded fetch off, only
+     * the bytes a URL cannot carry are escaped. */
+    {
+        char *encoded = d->config->disable_encoded_fetch
+                ? url_escape_invalid(fetch_url)
+                : url_encode(fetch_url);
 
         if (encoded == NULL) {
             ap_log_rerror(APLOG_MARK, APLOG_ERR, 0, d->r,
@@ -326,9 +364,7 @@ dims_get_image_data(dims_request_rec *d, char *fetch_url, dims_image_data_t *dat
 
     *data = image_data;
 
-    if (!d->config->disable_encoded_fetch) {
-        free(fetch_url);
-    }
+    free(fetch_url);
 
     return code;
 }
