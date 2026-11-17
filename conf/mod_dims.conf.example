@@ -22,6 +22,11 @@ DimsImagemagickTimeout 20000
 # limit.
 DimsMaxSourceBytes 33554432
 
+# The largest source image to decode, in pixels. The header is read first and a
+# larger source is refused before it is decoded, which is where the memory
+# goes. 0 means no limit.
+DimsMaxSourcePixels 100000000
+
 # Refuse a fetch to a private or loopback address, so a request cannot reach an
 # internal service. Set it to On only when your origin is on a private network.
 # The cloud metadata address is refused whatever this holds.

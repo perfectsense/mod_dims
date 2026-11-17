@@ -72,6 +72,8 @@ Two more are worth enabling as your deployment allows.
 | `DimsImagemagickTimeout` | 3000 |
 | `DimsIncludeDisposition` | false |
 | `DimsMaxSourceBytes` | 0 |
+| `DimsMaxSourcePixels` | 0 |
+| `DimsMaxSourcePixelsCacheExpire` | 3600 |
 | `DimsNoImageCacheExpire` | 60 |
 | `DimsOptimizeResize` | 0 |
 | `DimsOriginStatusMode` | `forward` |

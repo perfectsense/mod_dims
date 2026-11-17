@@ -65,6 +65,20 @@ it is decoded, both from a declared `Content-Length` and while reading.
 
 `0`, the default, means no limit.
 
+## DimsMaxSourcePixels
+
+```apacheconf
+DimsMaxSourcePixels 100000000
+```
+
+The largest source image to decode, in pixels. The header of a downloaded source is read first, on its own, and a source with more pixels than this is refused before it is decoded. The error image answers in its place, cached for `DimsMaxSourcePixelsCacheExpire`.
+
+`DimsMaxSourceBytes` bounds the download. This bounds the decode, which is where the memory goes: a 100 megapixel JPEG is a few tens of megabytes on the wire and hundreds of megabytes decoded.
+
+The error image is never measured, so it is served whatever the limit holds.
+
+`0`, the default, means no limit.
+
 ## DimsDefaultImagePrefix
 
 ```apacheconf

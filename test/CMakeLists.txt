@@ -23,6 +23,8 @@ add_executable(dims_test
     http/test_sources.c
     http/test_no_error_image.c
     http/test_source_limit.c
+    http/test_fetch_failure.c
+    http/test_pixel_limit.c
     http/test_status.c
     http/test_url_structure.c
     http/test_thumbnail.c
